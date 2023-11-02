@@ -29,4 +29,6 @@ public class AdminController {
         service.deleteUser(id);
     }
 
+    //TODO: create an Endpoint to AddAdmin OR promote an existing user to Admin.
+
 }

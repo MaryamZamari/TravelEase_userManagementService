@@ -13,9 +13,10 @@ public class UserManagementServiceApplication {
 	private static final Logger logger= LoggerFactory.getLogger(UserManagementServiceApplication.class);
 	public static void main(String[] args) {
 		SpringApplication.run(UserManagementServiceApplication.class, args);
-
-
 		logger.info("application started successfully");
+
+
+
 	}
 
 }

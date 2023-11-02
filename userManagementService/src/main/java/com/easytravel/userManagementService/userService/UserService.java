@@ -1,6 +1,6 @@
 package com.easytravel.userManagementService.userService;
 
-import com.easytravel.userManagementService.config.SecurityConfig;
+import com.easytravel.userManagementService.security.SecurityConfig;
 import com.easytravel.userManagementService.model.RegistrationRequest;
 import com.easytravel.userManagementService.model.User;
 import com.easytravel.userManagementService.repository.UserRepository;
@@ -67,7 +67,7 @@ public class UserService implements org.springframework.security.core.userdetail
         Optional<User> currentUser= repository.findById(id);
         if(currentUser.isPresent()){
             User user = currentUser.get();
-                user.setPassword(updatedUser.getPassword());
+                user.setPassword(securityConfig.passwordEncoder().encode(updatedUser.getPassword()));
                 repository.save(user);
             }else{
             throw new RuntimeException("User does not exist!");
@@ -82,19 +82,20 @@ public class UserService implements org.springframework.security.core.userdetail
 
     }
 
-    @Override //for Spring Security and authentication measures using username and password credentials.
+    @Override //for Spring Security and authentication measures using username and password credentials. Creating a user obj for authentication
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         logger.info("trying to load user info using username {}", username);
         User user= repository.findByUserName(username);
         if (user == null) {
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
-        logger.info("Loaded user: {} with role: {}", user.getUsername(), user.getRole());
+        logger.info("Loaded user: {} with role: {} {}", user.toString(), user.getRole());
         // Create and return a UserDetails object based on the retrieved User entity
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
+        return new org.springframework.security.core.userdetails.User(   //TODO: the security should not be case-sensitive ONLY for USERNAME
+                username,
                 user.getPassword(),
                 AuthorityUtils.createAuthorityList("ROLE_" + user.getRole().name())
+
         );
 
     }

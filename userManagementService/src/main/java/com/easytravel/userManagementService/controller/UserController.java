@@ -17,7 +17,7 @@ public class UserController {
     UserService service;
 
 
-   @GetMapping("/{id}")
+   @GetMapping("/{id}") //TODO: Each user should be able to see only their own details. So if i logged in with {id}, the url should be {id}. Only if the request is comming from a User with ADMIN role, it can check other people's details.
    public ResponseEntity<Optional<User>> getUser(@PathVariable Long id){
         Optional<User> user = service.findUser(id);
         if(user != null){
