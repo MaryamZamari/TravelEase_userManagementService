@@ -1,34 +1,67 @@
 package com.easytravel.userManagementService.config;
 
+import com.easytravel.userManagementService.model.Role;
+import com.easytravel.userManagementService.userService.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 
-import javax.sql.DataSource;
 
-//@Configuration
-//@EnableWebSecurity
-public class SecurityConfig /*extends WebSecurityConfigurerAdapter*/{
 
- /*   @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception{
-        httpSecurity
-                .authorizeHttpRequests(auth ->
-                        auth.anyRequest()
-                                .authenticated()
-                )
-                .httpBasic(Customizer.withDefaults());
-        return httpSecurity.build();
-    }*/
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig{
 
-  /*  @Bean                                                               //TODO: Make it communicate to the db
-    public UserDetailsManager userDetailsManager(DataSource dataSource){ //TODO: Hash the passwords later
-                                                                        //this is a simplified example and is not communicating with actual db. fix it.
-        UserDetails userDetails= User.withDefaultPasswordEncoder()
-                .username("USER")
-                .password("password")
-                .roles("user")
-                .build();
-        JdbcUserDetailsManager users= new JdbcUserDetailsManager(dataSource);
-        users.createUser(userDetails);
-        return users;
+    @Autowired
+    @Lazy //lazy initialization to avoid circular dependency with springSecurity
+    private UserService userService ;
+    public static final Logger logger= LoggerFactory.getLogger(SecurityConfig.class);
+
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
-*/
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth, UserService userService) throws Exception{ //using configureGlobal which will use userService to configure authentication
+      logger.info("configureGlobal method invoked");
+      auth.userDetailsService(userService);
+    }
+
+
+    //Configuring access control
+    @Bean
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        logger.info("securityFilterChain method invoked. checking for correct roles based on path.");
+        http.csrf(x-> x.disable());  //Cross-site Request Forgery
+        http
+                .authorizeHttpRequests(authorize ->
+                        authorize
+                                .requestMatchers(HttpMethod.POST,  "/public/**").permitAll()
+                               // .requestMatchers(HttpMethod.GET,  "/public/**").permitAll()
+                                .requestMatchers("/user/users/**").hasAnyRole(Role.AUTH_USER.name(), Role.ADMIN.name())
+                                .requestMatchers("/admin/users/**").hasRole(Role.ADMIN.name())
+                                .anyRequest().authenticated()
+                );
+        return http.build();
+    }
+
+    @Bean         //setting authentication with user's username and password that configured in the userService class.
+    public DaoAuthenticationProvider daoAuthenticationProvider(UserService userService){
+        DaoAuthenticationProvider authenticationProvider= new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
+        return authenticationProvider;
+    }
 }
