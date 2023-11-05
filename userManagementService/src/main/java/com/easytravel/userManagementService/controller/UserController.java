@@ -10,18 +10,14 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/user/users")
 public class UserController {
 
     @Autowired
     UserService service;
 
-    @GetMapping("/")
-    public ResponseEntity<List<User>> getAllUsers(){
-        List<User> users= service.findUsers();
-        return  ResponseEntity.ok(users);
-    }
-    @GetMapping("/{id}")
+
+   @GetMapping("/{id}") //TODO: Each user should be able to see only their own details. So if i logged in with {id}, the url should be {id}. Only if the request is comming from a User with ADMIN role, it can check other people's details.
    public ResponseEntity<Optional<User>> getUser(@PathVariable Long id){
         Optional<User> user = service.findUser(id);
         if(user != null){
@@ -30,20 +26,11 @@ public class UserController {
      return  ResponseEntity.notFound().build();
     }
 
-    @PostMapping("/")
-    public void createUser(@RequestBody User user){
-        service.createUser(user);
-    }
-
     @PutMapping("/{id}")
     public void updateUser(@PathVariable Long id, @RequestBody User user){
-        service.updateUser(id, user);
+        service.updatePassword(id, user);
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id){
-        service.deleteUser(id);
-    }
 
 
 
